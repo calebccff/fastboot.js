@@ -527,7 +527,7 @@ export class FastbootDevice {
             partition += "_" + (await this.getVariable("current-slot"));
         }
 
-        let maxDlSize = await this._getDownloadSize();
+        var maxDlSize = await this._getDownloadSize();
         let fileHeader = await common.readBlobAsBuffer(
             blob.slice(0, Sparse.FILE_HEADER_SIZE)
         );
@@ -582,6 +582,9 @@ export class FastbootDevice {
 
             splits += 1;
             sentBytes += split.bytes;
+
+            // Update max download size if device hasn't finished flushing yet
+            maxDlSize = await this._getDownloadSize();
         }
 
         common.logDebug(`Flashed ${partition} with ${splits} split(s)`);
