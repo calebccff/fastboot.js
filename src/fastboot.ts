@@ -16,7 +16,7 @@ const DEFAULT_DOWNLOAD_SIZE = 512 * 1024 * 1024; // 512 MiB
 // max download size even if the bootloader can accept more data.
 const MAX_DOWNLOAD_SIZE = 1024 * 1024 * 1024; // 1 GiB
 
-const GETVAR_TIMEOUT = 10000; // ms
+const GETVAR_TIMEOUT = 60000; // ms
 
 /**
  * Exception class for USB errors not directly thrown by WebUSB.
@@ -572,7 +572,7 @@ export class FastbootDevice {
         );
         let splits = 0;
         let sentBytes = 0;
-        for await (let split of Sparse.splitBlob(blob, maxDlSize)) {
+        for await (let split of Sparse.splitBlob(blob, maxDlSize/4)) {
             await this.upload(partition, split.data, (progress) => {
                 onProgress((sentBytes + progress * split.bytes) / totalBytes);
             });
@@ -582,9 +582,6 @@ export class FastbootDevice {
 
             splits += 1;
             sentBytes += split.bytes;
-
-            // Update max download size if device hasn't finished flushing yet
-            maxDlSize = await this._getDownloadSize();
         }
 
         common.logDebug(`Flashed ${partition} with ${splits} split(s)`);
