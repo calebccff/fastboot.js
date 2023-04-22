@@ -174,7 +174,7 @@ function parseChunkHeader(buffer) {
         /* 2: reserved, 16 bits */
         blocks: view.getUint32(4, true),
         dataBytes: view.getUint32(8, true) - CHUNK_HEADER_SIZE,
-        data: null,
+        data: null, // to be populated by consumer
     };
 }
 function calcChunksBlockSize(chunks) {
@@ -7959,6 +7959,7 @@ const SYSTEM_IMAGES = [
     "odm",
     "odm_dlkm",
     "product",
+    "system_dlkm",
     "system_ext",
     "system",
     "vendor_dlkm",
@@ -8548,7 +8549,7 @@ class FastbootDevice {
         if ((await this.getVariable(`has-slot:${partition}`)) === "yes") {
             partition += "_" + (await this.getVariable("current-slot"));
         }
-        let maxDlSize = await this._getDownloadSize();
+        var maxDlSize = await this._getDownloadSize();
         let fileHeader = await readBlobAsBuffer(blob.slice(0, FILE_HEADER_SIZE));
         let totalBytes = blob.size;
         let isSparse = false;
@@ -8591,6 +8592,8 @@ class FastbootDevice {
             await this.runCommand(`flash:${partition}`);
             splits += 1;
             sentBytes += split.bytes;
+            // Update max download size if device hasn't finished flushing yet
+            maxDlSize = await this._getDownloadSize();
         }
         logDebug(`Flashed ${partition} with ${splits} split(s)`);
     }
