@@ -8152,7 +8152,7 @@ const DEFAULT_DOWNLOAD_SIZE = 512 * 1024 * 1024; // 512 MiB
 // To conserve RAM and work around Chromium's ~2 GiB size limit, we limit the
 // max download size even if the bootloader can accept more data.
 const MAX_DOWNLOAD_SIZE = 1024 * 1024 * 1024; // 1 GiB
-const GETVAR_TIMEOUT = 10000; // ms
+const GETVAR_TIMEOUT = 60000; // ms
 /**
  * Exception class for USB errors not directly thrown by WebUSB.
  */
@@ -8584,7 +8584,7 @@ class FastbootDevice {
         logDebug(`Flashing ${blob.size} bytes to ${partition}, ${maxDlSize} bytes per split`);
         let splits = 0;
         let sentBytes = 0;
-        for await (let split of splitBlob(blob, maxDlSize)) {
+        for await (let split of splitBlob(blob, maxDlSize / 4)) {
             await this.upload(partition, split.data, (progress) => {
                 onProgress((sentBytes + progress * split.bytes) / totalBytes);
             });
@@ -8592,8 +8592,6 @@ class FastbootDevice {
             await this.runCommand(`flash:${partition}`);
             splits += 1;
             sentBytes += split.bytes;
-            // Update max download size if device hasn't finished flushing yet
-            maxDlSize = await this._getDownloadSize();
         }
         logDebug(`Flashed ${partition} with ${splits} split(s)`);
     }
